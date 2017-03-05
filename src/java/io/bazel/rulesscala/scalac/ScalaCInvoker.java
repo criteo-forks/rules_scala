@@ -31,8 +31,8 @@ public class ScalaCInvoker extends GenericWorker {
   @Override protected void setupOutput(PrintStream ps) {
     System.setOut(ps);
     System.setErr(ps);
-    Console$.MODULE$.setErrDirect(ps);
-    Console$.MODULE$.setOutDirect(ps);
+    Console$.MODULE$.setErr(ps);
+    Console$.MODULE$.setOut(ps);
   }
 
 

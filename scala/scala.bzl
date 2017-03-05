@@ -729,3 +729,87 @@ def scala_library_suite(name,
     scala_library(name = name, deps = ts, exports = exports + ts, visibility = visibility)
 
 
+# Scala 2.10
+SCALA_2_10_BUILD_FILE = """
+# scala.BUILD
+exports_files([
+  "bin/scala",
+  "bin/scalac",
+  "bin/scaladoc",
+  "lib/typesafe-config.jar",
+  "lib/jline.jar",
+  "lib/scala-actors.jar",
+  "lib/scala-actors-migration.jar",
+  "lib/scala-compiler.jar",
+  "lib/scala-library.jar",
+  "lib/scala-reflect.jar",
+  "lib/scala-swing.jar",
+  "lib/scalap.jar",
+  "lib/akka-actors.jar",
+])
+"""
+
+def scala210_repositories():
+  native.new_http_archive(
+    name = "scala210",
+    strip_prefix = "scala-2.10.6",
+    sha256 = "54adf583dae6734d66328cafa26d9fa03b8c4cf607e27b9f3915f96e9bcd2d67",
+    url = "http://downloads.lightbend.com/scala/2.10.6/scala-2.10.6.tgz",
+    build_file_content = SCALA_2_10_BUILD_FILE,
+  )
+
+_2_10_implicit_deps = {
+  "_ijar": attr.label(executable=True, cfg="host", default=Label("@bazel_tools//tools/jdk:ijar"), single_file=True, allow_files=True),
+  "_scalac": attr.label(executable=True, cfg="host", default=Label("//src/java/io/bazel/rulesscala/scalac:scalac_2_10"), allow_files=True),
+  "_scalalib": attr.label(default=Label("@scala210//:lib/scala-library.jar"), single_file=True, allow_files=True),
+  "_scalacompiler": attr.label(default=Label("@scala210//:lib/scala-compiler.jar"), single_file=True, allow_files=True),
+  "_scalareflect": attr.label(default=Label("@scala210//:lib/scala-reflect.jar"), single_file=True, allow_files=True),
+  "_java": attr.label(executable=True, cfg="host", default=Label("@bazel_tools//tools/jdk:java"), single_file=True, allow_files=True),
+  "_javac": attr.label(executable=True, cfg="host", default=Label("@bazel_tools//tools/jdk:javac"), single_file=True, allow_files=True),
+  "_jar": attr.label(executable=True, cfg="host", default=Label("//src/java/io/bazel/rulesscala/jar:binary_deploy.jar"), allow_files=True),
+  "_jar_bin": attr.label(executable=True, cfg="host", default=Label("//src/java/io/bazel/rulesscala/jar:binary")),
+  "_jdk": attr.label(default=Label("//tools/defaults:jdk"), allow_files=True),
+}
+
+# Common attributes reused across multiple rules.
+_2_10_common_attrs = {
+  "srcs": attr.label_list(
+      allow_files=_scala_srcjar_filetype),
+  "deps": attr.label_list(),
+  "plugins": attr.label_list(allow_files=_jar_filetype),
+  "runtime_deps": attr.label_list(),
+  "data": attr.label_list(allow_files=True, cfg="data"),
+  "resources": attr.label_list(allow_files=True),
+  "resource_strip_prefix": attr.string(),
+  "scalacopts":attr.string_list(),
+  "javacopts":attr.string_list(),
+  "jvm_flags": attr.string_list(),
+  "print_compile_time": attr.bool(default=False, mandatory=False),
+}
+
+scala_2_10_library = rule(
+  implementation=_scala_library_impl,
+  attrs={
+      "main_class": attr.string(),
+      "exports": attr.label_list(allow_files=False),
+      } + _2_10_implicit_deps + _2_10_common_attrs,
+  outputs={
+      "jar": "%{name}.jar",
+      "deploy_jar": "%{name}_deploy.jar",
+      "ijar": "%{name}_ijar.jar",
+      "manifest": "%{name}_MANIFEST.MF",
+      },
+)
+
+scala_2_10_macro_library = rule(
+  implementation=_scala_macro_library_impl,
+  attrs={
+      "main_class": attr.string(),
+      "exports": attr.label_list(allow_files=False),
+      } + _2_10_implicit_deps + _2_10_common_attrs,
+  outputs={
+      "jar": "%{name}.jar",
+      "deploy_jar": "%{name}_deploy.jar",
+      "manifest": "%{name}_MANIFEST.MF",
+      },
+)
